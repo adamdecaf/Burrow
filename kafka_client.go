@@ -49,15 +49,15 @@ func NewKafkaClient(app *ApplicationContext, cluster string) (*KafkaClient, erro
 	}
 
 	// Set up sarama client
-	clientConfig := sarama.NewClientConfig()
-	sclient, err := sarama.NewClient(app.Config.General.ClientID, brokerHosts, clientConfig)
+	clientConfig := sarama.NewConfig()
+	// needs to add app.Config.General.ClientID,
+	sclient, err := sarama.NewClient(brokerHosts, clientConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create sarama master consumer
-	consumerConfig := sarama.NewConsumerConfig()
-	master, err := sarama.NewConsumer(sclient, consumerConfig)
+	master, err := sarama.NewConsumerFromClient(sclient)
 	if err != nil {
 		sclient.Close()
 		return nil, err
@@ -66,8 +66,8 @@ func NewKafkaClient(app *ApplicationContext, cluster string) (*KafkaClient, erro
 	client := &KafkaClient{
 		app:            app,
 		cluster:        cluster,
-		client:         sclient,
-		masterConsumer: master,
+		client:         &sclient,
+		masterConsumer: &master,
 		requestChannel: make(chan *BrokerTopicRequest),
 		messageChannel: make(chan *sarama.ConsumerMessage),
 		errorChannel:   make(chan *sarama.ConsumerError),
